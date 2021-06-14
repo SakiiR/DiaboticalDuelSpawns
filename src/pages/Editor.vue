@@ -2,6 +2,21 @@
   <q-page class="flex">
     <div class="q-pa-md row items-start q-gutter-md">
       <q-card class="my-card" flat bordered>
+        <q-card-section :style="{ height: '100px', overflow: 'hidden' }">
+          <img
+            :src="thumbnail"
+            alt="click to add thumbnail"
+            @click="browseThumbnail"
+            :style="{ width: '100px', border: '1px solid black' }"
+          />
+
+          <input
+            type="file"
+            ref="thumbnailInput"
+            @change="processThumbnail"
+            class="hidden"
+          />
+        </q-card-section>
         <canvas ref="editor" width="800px" height="800px" />
 
         <q-card-section>
@@ -14,27 +29,35 @@
 
           <div class="text-caption text-grey">
             Select your map image. It can be found in the diabotical system
-            directory blah blah blah
+            directory. Click to add or remove spawn point.
           </div>
         </q-card-section>
 
         <q-card-actions>
-          <q-btn flat color="dark" label="Share" @click="share" />
-          <q-btn
-            flat
-            color="primary"
-            label="Choose Image"
-            @click="browseFile"
-          />
-
-          <q-input v-model="code" filled type="textarea" />
-
-          <q-btn flat color="primary" label="Load Code" @click="loadCode" />
-
+          <div>
+            <q-btn flat color="dark" label="Share" @click="share" />
+            <q-btn
+              flat
+              color="primary"
+              label="Choose Map (background)"
+              @click="browseMap"
+            />
+          </div>
+          <div>
+            <q-input v-model="code" filled borderless>
+              <q-btn
+                round
+                icon="get_app"
+                flat
+                color="primary"
+                @click="loadCode"
+              />
+            </q-input>
+          </div>
           <input
             type="file"
-            ref="fileInput"
-            @change="processFile"
+            ref="mapInput"
+            @change="processMap"
             class="hidden"
           />
         </q-card-actions>
@@ -53,6 +76,7 @@ export default {
   data() {
     return {
       title: "Default title",
+      thumbnail: null,
       image: null,
       spawns: [],
       code: "",
@@ -143,29 +167,32 @@ export default {
     },
     loadCode() {
       try {
-        const {spawns, title, image} = JSON.parse(atob(this.code))
+        const { spawns, title, image, thumbnail } = JSON.parse(this.code);
+
         this.spawns = spawns;
         this.title = title;
         this.image = image;
+        this.thumbnail = thumbnail;
 
         this.code = "";
-      } catch(e){
-          this.$q.notify({
-            type: "negative",
-            message: `Invalid code provided`
-          });
+      } catch (e) {
+        this.$q.notify({
+          type: "negative",
+          message: `Invalid code provided`
+        });
       }
     },
     share() {
-      const { spawns, image, title } = this;
+      const { spawns, image, title, thumbnail } = this;
+      const uuid = uuidv4();
 
-      const share = btoa(
-        JSON.stringify({
-          spawns,
-          image,
-          title
-        })
-      );
+      const share = JSON.stringify({
+        spawns,
+        image,
+        thumbnail,
+        uuid,
+        title
+      });
 
       copyToClipboard(share)
         .then(() => {
@@ -182,10 +209,13 @@ export default {
           });
         });
     },
-    browseFile() {
-      const { fileInput } = this.$refs;
-
-      fileInput.click();
+    browseMap() {
+      const { mapInput } = this.$refs;
+      mapInput.click();
+    },
+    browseThumbnail() {
+      const { thumbnailInput } = this.$refs;
+      thumbnailInput.click();
     },
     applyImage() {
       if (!this.image) return;
@@ -204,10 +234,21 @@ export default {
 
       image.src = this.image;
     },
-    processFile(ev) {
-      this.image = null;
-
+    processMap(ev) {
       const file = ev.target.files[0];
+      this.processFile(file, "image");
+    },
+    processThumbnail(ev) {
+      const file = ev.target.files[0];
+      this.processFile(file, "thumbnail");
+    },
+    processFile(file, type) {
+      if (type === "thumbnail") {
+        this.thumbnail = null;
+      } else {
+        this.image = null;
+      }
+
       if (!file) {
         this.$q.notify({
           type: "negative",
@@ -220,8 +261,12 @@ export default {
       reader.onload = e => {
         const content = e.target.result;
 
-        this.image = content;
-        this.applyImage();
+        if (type === "thumbnail") {
+          this.thumbnail = content;
+        } else {
+          this.image = content;
+          this.applyImage();
+        }
       };
 
       reader.readAsDataURL(file);
@@ -234,6 +279,7 @@ export default {
 canvas {
   width: 100%;
   height: 100%;
+  border: 1px solid black;
 }
 
 .hidden {

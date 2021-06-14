@@ -20,7 +20,7 @@
       </q-toolbar>
     </q-header>
 
-    <q-page-container>
+    <q-page-container class="main">
       <router-view />
     </q-page-container>
   </q-layout>
@@ -35,3 +35,10 @@ export default {
   }
 };
 </script>
+
+<style scoped>
+.main {
+  width: 100%;
+  margin: auto;
+}
+</style>
