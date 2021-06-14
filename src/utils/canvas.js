@@ -21,6 +21,13 @@ export default class CanvasHelper {
         return (distance < this.globalRadius + this.globalRadius);
     }
 
+    computeDistance(p1, p2) {
+        var dx = Math.abs(p1.x - p2.x)
+        var dy = Math.abs(p1.y - p2.y)
+
+        return Math.sqrt(dx * dx + dy * dy);
+    }
+
     getMousePosition(event) {
         // get canvas position
         let top = 0;
